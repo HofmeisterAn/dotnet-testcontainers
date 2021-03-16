@@ -14,7 +14,8 @@ namespace DotNet.Testcontainers.Clients
 
   internal sealed class DockerImageOperations : DockerApiClient, IDockerImageOperations
   {
-    public DockerImageOperations(Uri endpoint) : base(endpoint)
+    public DockerImageOperations(IDockerClientConfiguration clientConfig)
+      : base(clientConfig)
     {
     }
 
@@ -60,7 +61,7 @@ namespace DotNet.Testcontainers.Clients
         .ConfigureAwait(false) != null;
     }
 
-    public Task CreateAsync(IDockerImage image, IAuthenticationConfiguration authConfig, CancellationToken ct = default)
+    public Task CreateAsync(IDockerImage image, IDockerRegistryAuthenticationConfiguration authConfig, CancellationToken ct = default)
     {
       return this.Docker.Images.CreateImageAsync(
         new ImagesCreateParameters

@@ -14,6 +14,7 @@ namespace DotNet.Testcontainers.Clients
   using DotNet.Testcontainers.Images.Configurations;
   using DotNet.Testcontainers.Services;
   using ICSharpCode.SharpZipLib.Tar;
+  using DockerClientConfiguration = Containers.Configurations.DockerClientConfiguration;
 
   internal sealed class TestcontainersClient : ITestcontainersClient
   {
@@ -21,7 +22,7 @@ namespace DotNet.Testcontainers.Clients
 
     public const string TestcontainersCleanUpLabel = TestcontainersLabel + ".cleanUp";
 
-    private readonly string osRootDirectory = Path.GetPathRoot(Directory.GetCurrentDirectory());
+    private readonly string osRootDirectory = Path.GetPathRoot(AppContext.BaseDirectory);
 
     private readonly TestcontainersRegistryService registryService;
 
@@ -31,16 +32,17 @@ namespace DotNet.Testcontainers.Clients
 
     private readonly IDockerSystemOperations system;
 
-    public TestcontainersClient() : this(
-      DockerApiEndpoint.Local)
+    public TestcontainersClient()
+      : this(new DockerClientConfiguration())
     {
     }
 
-    public TestcontainersClient(Uri endpoint) : this(
-      new TestcontainersRegistryService(),
-      new DockerContainerOperations(endpoint),
-      new DockerImageOperations(endpoint),
-      new DockerSystemOperations(endpoint))
+    public TestcontainersClient(IDockerClientConfiguration clientAuthConfig)
+      : this(
+        new TestcontainersRegistryService(),
+        new DockerContainerOperations(clientAuthConfig),
+        new DockerImageOperations(clientAuthConfig),
+        new DockerSystemOperations(clientAuthConfig))
     {
     }
 
@@ -185,7 +187,7 @@ namespace DotNet.Testcontainers.Clients
       if (!await this.images.ExistsWithNameAsync(configuration.Image.FullName, ct)
         .ConfigureAwait(false))
       {
-        await this.images.CreateAsync(configuration.Image, configuration.AuthConfig, ct)
+        await this.images.CreateAsync(configuration.Image, configuration.DockerRegistryAuthConfig, ct)
           .ConfigureAwait(false);
       }
 

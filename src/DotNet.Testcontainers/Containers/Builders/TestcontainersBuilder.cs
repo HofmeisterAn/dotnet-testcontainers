@@ -42,7 +42,8 @@ namespace DotNet.Testcontainers.Containers.Builders
 
     public TestcontainersBuilder() : this(
       Apply(
-        authConfig: new AuthenticationConfiguration(),
+        clientAuthConfig: DockerClientConfiguration.Default,
+        registryAuthConfig: DockerRegistryAuthenticationConfiguration.Default,
         labels: new DefaultLabels(),
         outputConsumer: Consume.DoNotConsumeStdoutAndStderr(),
         waitStrategies: Wait.ForUnixContainer().Build(),
@@ -175,15 +176,24 @@ namespace DotNet.Testcontainers.Containers.Builders
     }
 
     /// <inheritdoc />
-    public ITestcontainersBuilder<TDockerContainer> WithDockerEndpoint(string endpoint)
+    public ITestcontainersBuilder<TDockerContainer> WithDockerEndpoint(string clientEndpoint)
     {
-      return Build(this, Apply(endpoint: new Uri(endpoint)));
+      var clientAuthConfig = new DockerClientConfiguration(new Uri(clientEndpoint));
+      return Build(this, Apply(clientAuthConfig: clientAuthConfig));
+    }
+
+    /// <inheritdoc />
+    public ITestcontainersBuilder<TDockerContainer> WithDockerEndpoint(string clientEndpoint, string certificatesDirectory)
+    {
+      var clientAuthConfig = new DockerClientEnvironmentConfiguration(new Uri(clientEndpoint), certificatesDirectory, true);
+      return Build(this, Apply(clientAuthConfig: clientAuthConfig));
     }
 
     /// <inheritdoc />
     public ITestcontainersBuilder<TDockerContainer> WithRegistryAuthentication(string registryEndpoint, string username, string password)
     {
-      return Build(this, Apply(authConfig: new AuthenticationConfiguration(new Uri(registryEndpoint), username, password)));
+      var registryAuthConfig = new DockerRegistryAuthenticationConfiguration(new Uri(registryEndpoint), username, password);
+      return Build(this, Apply(registryAuthConfig: registryAuthConfig));
     }
 
     /// <inheritdoc />
@@ -219,8 +229,8 @@ namespace DotNet.Testcontainers.Containers.Builders
 #pragma warning disable S107
 
     private static ITestcontainersConfiguration Apply(
-      Uri endpoint = null,
-      IAuthenticationConfiguration authConfig = null,
+      IDockerClientConfiguration clientAuthConfig = null,
+      IDockerRegistryAuthenticationConfiguration registryAuthConfig = null,
       IDockerImage image = null,
       string name = null,
       string hostname = null,
@@ -238,8 +248,8 @@ namespace DotNet.Testcontainers.Containers.Builders
       bool cleanUp = true)
     {
       return new TestcontainersConfiguration(
-        endpoint ?? DockerApiEndpoint.Local,
-        authConfig,
+        clientAuthConfig,
+        registryAuthConfig,
         image,
         name,
         hostname,
@@ -265,7 +275,6 @@ namespace DotNet.Testcontainers.Containers.Builders
       Action<TDockerContainer> moduleConfiguration = null)
     {
       var cleanUp = next.CleanUp && previous.configuration.CleanUp;
-      var endpoint = Merge(next.Endpoint, previous.configuration.Endpoint, DockerApiEndpoint.Local);
       var image = Merge(next.Image, previous.configuration.Image);
       var name = Merge(next.Name, previous.configuration.Name);
       var hostname = Merge(next.Hostname, previous.configuration.Hostname);
@@ -278,14 +287,15 @@ namespace DotNet.Testcontainers.Containers.Builders
       var portBindings = Merge(next.PortBindings, previous.configuration.PortBindings);
       var mounts = Merge(next.Mounts, previous.configuration.Mounts);
 
-      var authConfig = new[] { next.AuthConfig, previous.configuration.AuthConfig }.First(config => config != null);
+      var clientAuthConfig = new[] { next.DockerClientAuthConfig, previous.configuration.DockerClientAuthConfig }.First(config => config != null);
+      var registryAuthConfig = new[] { next.DockerRegistryAuthConfig, previous.configuration.DockerRegistryAuthConfig }.First(config => config != null);
       var outputConsumer = new[] { next.OutputConsumer, previous.configuration.OutputConsumer }.First(config => config != null);
       var waitStrategies = new[] { next.WaitStrategies, previous.configuration.WaitStrategies }.First(config => config != null);
       var startupCallback = new[] { next.StartupCallback, previous.configuration.StartupCallback }.First(config => config != null);
 
       var mergedConfiguration = Apply(
-        endpoint,
-        authConfig,
+        clientAuthConfig,
+        registryAuthConfig,
         image,
         name,
         hostname,
@@ -306,7 +316,7 @@ namespace DotNet.Testcontainers.Containers.Builders
     }
 
     /// <summary>
-    /// Returns the changed Testcontainer configuration object. If there is no change, the previous Testcontainer configuration object is returned.
+    ///   Returns the changed Testcontainer configuration object. If there is no change, the previous Testcontainer configuration object is returned.
     /// </summary>
     /// <param name="next">Changed Testcontainer configuration object.</param>
     /// <param name="previous">Previous Testcontainer configuration object.</param>
@@ -320,7 +330,7 @@ namespace DotNet.Testcontainers.Containers.Builders
     }
 
     /// <summary>
-    /// Merges all existing and new Testcontainer configuration changes. If there are no changes, the previous Testcontainer configurations are returned.
+    ///   Merges all existing and new Testcontainer configuration changes. If there are no changes, the previous Testcontainer configurations are returned.
     /// </summary>
     /// <param name="next">Changed Testcontainer configuration.</param>
     /// <param name="previous">Previous Testcontainer configuration.</param>
@@ -333,14 +343,12 @@ namespace DotNet.Testcontainers.Containers.Builders
       {
         return next ?? previous;
       }
-      else
-      {
-        return next.Concat(previous).ToArray();
-      }
+
+      return next.Concat(previous).ToArray();
     }
 
     /// <summary>
-    /// Merges all existing and new Testcontainer configuration changes. If there are no changes, the previous Testcontainer configurations are returned.
+    ///   Merges all existing and new Testcontainer configuration changes. If there are no changes, the previous Testcontainer configurations are returned.
     /// </summary>
     /// <param name="next">Changed Testcontainer configuration.</param>
     /// <param name="previous">Previous Testcontainer configuration.</param>
@@ -353,10 +361,8 @@ namespace DotNet.Testcontainers.Containers.Builders
       {
         return next ?? previous;
       }
-      else
-      {
-        return next.Concat(previous.Where(item => !next.Keys.Contains(item.Key))).ToDictionary(item => item.Key, item => item.Value);
-      }
+
+      return next.Concat(previous.Where(item => !next.Keys.Contains(item.Key))).ToDictionary(item => item.Key, item => item.Value);
     }
 
     private sealed class DefaultLabels : ReadOnlyDictionary<string, string>

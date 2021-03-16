@@ -9,13 +9,13 @@ namespace DotNet.Testcontainers.Containers.Configurations
   using DotNet.Testcontainers.Images;
 
   /// <inheritdoc cref="ITestcontainersConfiguration" />
-  public readonly struct TestcontainersConfiguration : ITestcontainersConfiguration
+  internal readonly struct TestcontainersConfiguration : ITestcontainersConfiguration
   {
 #pragma warning disable S107
 
     public TestcontainersConfiguration(
-      Uri endpoint,
-      IAuthenticationConfiguration authenticationConfigurations,
+      IDockerClientConfiguration clientAuthConfig,
+      IDockerRegistryAuthenticationConfiguration registryAuthConfig,
       IDockerImage image,
       string name,
       string hostname,
@@ -32,22 +32,22 @@ namespace DotNet.Testcontainers.Containers.Configurations
       Func<IDockerContainer, CancellationToken, Task> startupCallback,
       bool cleanUp = true)
     {
-      this.CleanUp  = cleanUp;
-      this.Endpoint  = endpoint;
-      this.AuthConfig = authenticationConfigurations;
-      this.Image  = image;
-      this.Name  = name;
+      this.CleanUp = cleanUp;
+      this.DockerClientAuthConfig = clientAuthConfig;
+      this.DockerRegistryAuthConfig = registryAuthConfig;
+      this.Image = image;
+      this.Name = name;
       this.Hostname = hostname;
-      this.WorkingDirectory  = workingDirectory;
-      this.Entrypoint  = entrypoint;
-      this.Command  = command;
-      this.Environments  = environments;
-      this.Labels  = labels;
-      this.ExposedPorts  = exposedPorts;
-      this.PortBindings  = portBindings;
-      this.Mounts  = mounts;
-      this.OutputConsumer  = outputConsumer;
-      this.WaitStrategies  = waitStrategies;
+      this.WorkingDirectory = workingDirectory;
+      this.Entrypoint = entrypoint;
+      this.Command = command;
+      this.Environments = environments;
+      this.Labels = labels;
+      this.ExposedPorts = exposedPorts;
+      this.PortBindings = portBindings;
+      this.Mounts = mounts;
+      this.OutputConsumer = outputConsumer;
+      this.WaitStrategies = waitStrategies;
       this.StartupCallback = startupCallback;
     }
 
@@ -57,10 +57,10 @@ namespace DotNet.Testcontainers.Containers.Configurations
     public bool CleanUp { get; }
 
     /// <inheritdoc />
-    public Uri Endpoint { get; }
+    public IDockerClientConfiguration DockerClientAuthConfig { get; }
 
     /// <inheritdoc />
-    public IAuthenticationConfiguration AuthConfig { get; }
+    public IDockerRegistryAuthenticationConfiguration DockerRegistryAuthConfig { get; }
 
     /// <inheritdoc />
     public IDockerImage Image { get; }

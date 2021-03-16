@@ -1,6 +1,5 @@
 namespace DotNet.Testcontainers.Clients
 {
-  using System;
   using System.Collections.Generic;
   using System.IO;
   using System.Linq;
@@ -17,7 +16,8 @@ namespace DotNet.Testcontainers.Clients
   {
     private static readonly ILogger<DockerContainerOperations> Logger = TestcontainersHostService.GetLogger<DockerContainerOperations>();
 
-    public DockerContainerOperations(Uri endpoint) : base(endpoint)
+    public DockerContainerOperations(IDockerClientConfiguration clientConfig)
+      : base(clientConfig)
     {
     }
 
@@ -97,12 +97,7 @@ namespace DotNet.Testcontainers.Clients
     {
       Logger.LogInformation("Attaching {outputConsumer} at container {id}", outputConsumer.GetType(), id);
 
-      var attachParameters = new ContainerAttachParameters
-      {
-        Stdout = true,
-        Stderr = true,
-        Stream = true,
-      };
+      var attachParameters = new ContainerAttachParameters { Stdout = true, Stderr = true, Stream = true };
 
       var stream = await this.Docker.Containers.AttachContainerAsync(id, false, attachParameters, ct)
         .ConfigureAwait(false);
@@ -121,8 +116,9 @@ namespace DotNet.Testcontainers.Clients
       await this.Docker.Exec.StartContainerExecAsync(created.ID, ct)
         .ConfigureAwait(false);
 
-      for (ContainerExecInspectResponse response; (response = await this.Docker.Exec.InspectContainerExecAsync(created.ID, ct)
-        .ConfigureAwait(false)) != null;)
+      for (ContainerExecInspectResponse response;
+        (response = await this.Docker.Exec.InspectContainerExecAsync(created.ID, ct)
+          .ConfigureAwait(false)) != null;)
       {
         if (!response.Running)
         {
@@ -139,9 +135,9 @@ namespace DotNet.Testcontainers.Clients
 
       var hostConfig = new HostConfig
       {
-        // AutoRemove = configuration.CleanUp, TODO: Should we keep this? If the Docker daemon remove containers we're no longer able to call e. g. `CleanUp(true)` + `GetExitCode()`.
-        PortBindings = converter.PortBindings,
-        Mounts = converter.Mounts,
+        // TODO: Should we keep this? If the Docker daemon remove containers we're no longer able to call e. g. `CleanUp(true)` + `GetExitCode()`.
+        // AutoRemove = configuration.CleanUp,
+        PortBindings = converter.PortBindings, Mounts = converter.Mounts
       };
 
       var createParameters = new CreateContainerParameters
@@ -155,7 +151,7 @@ namespace DotNet.Testcontainers.Clients
         Env = converter.Environments,
         Labels = converter.Labels,
         ExposedPorts = converter.ExposedPorts,
-        HostConfig = hostConfig,
+        HostConfig = hostConfig
       };
 
       var id = (await this.Docker.Containers.CreateContainerAsync(createParameters, ct)

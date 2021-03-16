@@ -1,7 +1,7 @@
 namespace DotNet.Testcontainers.Containers.WaitStrategies.Unix
 {
-  using System;
   using System.Threading.Tasks;
+  using DotNet.Testcontainers.Containers.Configurations;
   using DotNet.Testcontainers.Clients;
 
   internal class UntilCommandIsCompleted : IWaitUntil
@@ -17,9 +17,9 @@ namespace DotNet.Testcontainers.Containers.WaitStrategies.Unix
       this.command = command;
     }
 
-    public virtual async Task<bool> Until(Uri endpoint, string id)
+    public virtual async Task<bool> Until(IDockerClientConfiguration clientAuthConfig, string id)
     {
-      using (var client = new TestcontainersClient(endpoint))
+      using (var client = new TestcontainersClient(clientAuthConfig))
       {
         var exitCode = await client.ExecAsync(id, this.command)
           .ConfigureAwait(false);

@@ -20,16 +20,16 @@ namespace DotNet.Testcontainers.Containers.Configurations
     bool CleanUp { get; }
 
     /// <summary>
-    /// Gets the Docker API endpoint.
+    /// Gets the Docker client authentication configuration.
     /// </summary>
     [NotNull]
-    Uri Endpoint { get; }
+    IDockerClientConfiguration DockerClientAuthConfig { get; }
 
     /// <summary>
     /// Gets the Docker registry authentication configuration.
     /// </summary>
     [NotNull]
-    IAuthenticationConfiguration AuthConfig { get; }
+    IDockerRegistryAuthenticationConfiguration DockerRegistryAuthConfig { get; }
 
     /// <summary>
     /// Gets the Docker image.
